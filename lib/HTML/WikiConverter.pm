@@ -15,7 +15,7 @@ use Carp;
 use URI::Escape;
 use URI;
 
-our $VERSION = '0.64';
+our $VERSION = '0.65';
 our $AUTOLOAD;
 
 =head1 NAME

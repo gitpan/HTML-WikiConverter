@@ -71,8 +71,10 @@ sub attributes { {
 
 package main;
 
+use strict;
 use Test::More tests => 53;
 use HTML::WikiConverter;
+use Test::HTTP::Server;
 
 my $have_lwp = eval "use LWP::UserAgent; 1";
 my $have_query_param = eval "use URI::QueryParam; 1";
@@ -156,17 +158,23 @@ is( $wc4->html2wiki( html => '&lt;', escape_entities => 1 ), '&lt;', "escape ent
 is( $wc4->html2wiki( html => '&lt;' ), '&lt;', "escape_entities is enabled by default" );
 
 SKIP: {
-  skip "LWP::UserAgent required for testing how content is fetched from URIs" => 4 unless $have_lwp;
-  skip "Couldn't fetch test website http://www.perl.org. Perhaps you don't have internet access?" => 4 unless LWP::UserAgent->new->get('http://www.perl.org')->is_success;
+   skip "LWP::UserAgent required for testing how content is fetched from URIs" => 4 unless $have_lwp;
+   my $http_server = Test::HTTP::Server->new();
+   sub Test::HTTP::Server::Request::old_test_page { 
+      my $self = shift; 
+      return '<b>test</b>'."\n";
+   };
+   my $test_uri=$http_server->uri . 'old_test_page' ;
 
-  is( $wc4->html2wiki( uri => 'http://diberri.dyndns.org/wikipedia/html2wiki-old/test.html', strip_tags => ['head'] ), '**test**', 'fetch uri, no ua' );
+  $wc4->html2wiki( uri => $test_uri, strip_tags => ['head'] );
+  is( $wc4->html2wiki( uri => $test_uri, strip_tags => ['head'] ), '**test**', 'fetch uri, no ua' );
   is( $wc4->user_agent->agent, $wc4->__default_ua_string, 'using default ua' );
 
   my $ua_agent = 'html2wiki-test/0.5x';
   my $ua = new LWP::UserAgent( agent => $ua_agent );
   $wc4->user_agent($ua);
 
-  is( $wc4->html2wiki( uri => 'http://diberri.dyndns.org/wikipedia/html2wiki-old/test.html', strip_tags => ['head'] ), '**test**', 'fetch uri w/ ua' );
+  is( $wc4->html2wiki( uri => $test_uri, strip_tags => ['head'] ), '**test**', 'fetch uri w/ ua' );
   is( $wc4->user_agent->agent, $ua_agent, 'using user-specified ua' );
 };
 
